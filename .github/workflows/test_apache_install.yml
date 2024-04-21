@@ -16,11 +16,6 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v2
 
-    - name: Compile the code
-      run: |
-        cd cgi-bin/lk || exit 1
-        make
-
     - name: Install Apache and Enable CGI
       run: |
         sudo apt-get update
@@ -31,6 +26,16 @@ jobs:
       run: |
         sudo apt-get install python2
         sudo apt-get install gnuplot
+
+    - name: Compile the code
+      run: |
+        cd cgi-bin/lk || exit 1
+        make
+
+    - name: Create and mount temporary data directory
+      run: |
+        sudo mkdir /space
+        sudo mount -t tmpfs -o size=1G,mode=0777 tmpfs /space
 
     - name: Configure Apache to Enable CGI
       run: |
@@ -45,8 +50,8 @@ jobs:
              SetHandler cgi-script
              Require all granted
             </Directory>
-            ErrorLog \${APACHE_LOG_DIR}/error.log
-            CustomLog \${APACHE_LOG_DIR}/access.log combined
+            ErrorLog /var/log/apache2/error.log
+            CustomLog /var/log/apache2/access.log combined
         </VirtualHost>
         EOF
         sudo systemctl restart apache2
