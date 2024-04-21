@@ -2,7 +2,7 @@
 
 # Web-based Period Search Software
 
-This repository contains the source code of the web-based period search software. You are welcome to install it on your own web server.
+This repository contains the source code of the [web-based period search service](https://scan.sai.msu.ru/lk/) ([mirror](https://kirx.net/lk/)). You are welcome to install it on your own web server.
 
 ## Requirements
 
