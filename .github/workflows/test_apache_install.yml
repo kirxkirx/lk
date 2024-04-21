@@ -1,4 +1,4 @@
-name: Test Apache CGI Setup
+name: Test Install with Apache CGI
 
 on:
   push:
