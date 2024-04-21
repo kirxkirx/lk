@@ -1,0 +1,124 @@
+<html>
+<head>
+
+<style type="text/css">
+body { color: #000;
+ background: #fff;
+ font-family: arial, helvetica, sans-serif;
+ font-size: 12pt;
+ line-height: 16pt;
+ margin-top: 3mm;
+ margin-bottom: 3mm;
+ margin-left: 10mm;
+ margin-right: 10mm;
+}
+ 
+p {text-align: justify; text-indent: 6mm; line-height: 16pt}
+.code {text-align: left; font-family: courier; background: #ccc; color:
+#000}
+table.main {border-spacing: 5pt}
+td { padding-left: 20pt; padding-right: 20pt; padding-bottom: 3pt }
+
+a:link {color: #55f; text-decoration: none}
+a:visited {color: #33f; text-decoration: none}
+a:active {color: #55f; text-decoration: none}
+a:hover {color: #55f; text-decoration: underline}
+</style>
+</head>
+
+<body>
+
+<center>  
+<h2>Period search service</h2><br>
+
+Please enter the lightcurve file name and period search parameters:
+<form enctype="multipart/form-data" action="../cgi-bin/lk/process_lightcurve.py" method="post">
+<table width="750">
+<tr><td>Lightcurve file: </td><td><input type="file" name="file" size="32"></td></tr>
+<tr><td>Maximal trial period:  </td><td><input type="text" name="pmax" value="100" size="4"> days</td></tr>
+<tr><td>Minimal trial period:  </td><td><input type="text" name="pmin" value="0.1" size="4"> days</td></tr>
+<tr><td>Maximal phase shift:  </td><td><input type="text" name="phaseshift" value="0.1" size="4"></td></tr>
+<tr><td></td><td><input type="submit" value="Compute" id="crazybutton"></td></tr>
+<tr><td colspan="2"><hr></td></tr>
+</table>
+
+<h4>If uploading a raw ASAS-SN .csv lightcurve</h4>
+and both V and g-band data are present in the file<br>
+<input type="radio" name="asassnband" value="1" checked>&nbsp;shift g-band data to match V zero-point<br>
+<input type="radio" name="asassnband" value="2">&nbsp;use V-band data only<br>
+<input type="radio" name="asassnband" value="3">&nbsp;use g-band data only.<br><br>
+Note that ASAS-SN .csv lightcurves are already heliocentric-corrected.
+
+<h4>Information needed for the Heliocentric correction:</h4>
+Apply the <a href="http://en.wikipedia.org/wiki/Heliocentric_Julian_Day">Heliocentric correction</a> and convert all dates to <a href="http://en.wikipedia.org/wiki/Terrestrial_Time">Terrestrial Time</a> (TT)? <input type="radio" name="applyhelcor" value="Yes">Yes /<input type="radio" name="applyhelcor" value="No" checked>No<br>
+<tt>TT = TAI + 32.184 = UTC + (number of leap seconds) + 32.184<tt><br>
+Input <a href="http://en.wikipedia.org/wiki/Time_standard">time system</a> (<a href="http://www.cv.nrao.edu/~rfisher/Ephemerides/times.html">see also</a>)? <input type="radio" name="timesys" value="UTC" checked>JD(UTC) /<input type="radio" name="timesys" value="TT">JD(TT)<br>
+<a href="http://en.wikipedia.org/wiki/Equatorial_coordinate_system">Sky position</a> (R.A. Dec., J2000): <input type="text" name="position" value="00:00:00.00 +00:00:00.0" size="18"><br>
+(The correct sky position is needed only if you want to apply the
+Heliocentric correction.)
+<input type="hidden" name="fileupload" value="True">
+
+<h4>Auxiliary settings</h4>
+Phase range for plots: <input type="radio" name="phaserange" value="1" checked>&nbsp;-0.5 to 1.0&nbsp;&nbsp;&nbsp;<input type="radio" name="phaserange" value="2">&nbsp;0.0 to 2.0&nbsp;&nbsp;&nbsp;<input type="radio" name="phaserange" value="3">&nbsp;0.0 to 1.0
+</form>
+</center>
+<br>
+<p>
+The lightcurve should be a simple ASCII file in the "JD mag", "JD mag mag_err", or <a href="http://scan.sai.msu.ru/vast/">VaST</a> format. 
+<font color="green">
+<a href="http://nesssi.cacr.caltech.edu/DataRelease/">The Catalina Surveys</a>
+and
+<a href="https://asas-sn.osu.edu/">the ASAS-SN</a>
+ .csv files are also supported.</font>
+The lightcurve may contain comment lines. Note, that (unless the
+Catalina Surveys .csv file is supplied) the program expects time to be
+expressed as a full JD, not MJD. If MJD (or any other form of truncated JD) 
+is used in the lightcurve file, the labeling of plots will be incorrect.
+Also, the Heliocentric correction cannot be applied to such lightcurves.
+<b>Example lightcurves may be found 
+<a href="http://www.astronet.ru/db/varstars/msg/eid/PZP-08-0003">here</a>, <a href="http://www.astronet.ru/db/varstars/msg/eid/PZP-08-0020">here</a>, and
+<a href="http://www.astronet.ru/db/varstars/msg/eid/PZP-08-0022">here</a>
+(links to data files are at the bottom of these pages).</b>
+Two period search methods are currently implemented. One is based on 
+<a href="http://adsabs.harvard.edu/abs/1965ApJS...11..216L">Lafler &amp; Kinman (1965, ApJS, 11,
+216) paper</a>. You may find a simplier explanation of this method in Russian 
+<a href="http://comet.sai.msu.ru/~dmbiz/prac/next/antipin/">here</a>. The
+other is <a href="http://adsabs.harvard.edu/abs/1975Ap%26SS..36..137D">Deeming
+(1975, Ap&amp;SS, 36, 137)</a> Discrete Fourier Transform (DFT) method (see also the discussion
+in <a href="http://adsabs.harvard.edu/abs/1982ApJ...263..835S">this paper</a>).
+</p>
+<br/>
+For long computations you may need to change the timeout settings of your
+web browser. In Firefox it can be done by typing "about:config" in the address
+bar and then filtering on "timeout". The paerameters you need to change are
+probably called <tt>network.http.connection-timeout</tt>
+and <tt>network.http.response.timeout</tt>
+<br/><br/>
+This period search service is also available at the mirror sites: 
+<a href="http://polaris.kirx.net/lk/">Mirror 1</a>,
+<a href="http://vast.sai.msu.ru/lk/">Mirror 2</a>,
+<a href="http://scan.sai.msu.ru/lk/">Mirror 3</a>,
+<a href="http://webefk.kourovka.ru/lk/">Mirror 4</a>.
+<br/>
+You may download the latest <a href="http://scan.sai.msu.ru/lk/source/">source
+code distribution</a> and install the period search service at your own web server.
+This program is free software provided under the terms of <a href="http://www.gnu.org/copyleft/gpl.html">the GNU General Public
+License</a>.
+<br/><br/>
+If you have questions, bug reports or suggestions how to improve this
+service, please fell free to contact the author (Kirill Sokolovsky) via e-mail: <b>kirx[at]scan&#046;sai&#046;msu&#046;ru</b><br/>
+
+<br/>
+<i>A similar web-based period search service supporting a different set of
+algorithms is provided by 
+<a href="https://exoplanetarchive.ipac.caltech.edu/cgi-bin/Pgram/nph-pgram">the NASA Exoplanet Archive</a>
+(<a href="http://exoplanetarchive.ipac.caltech.edu/cgi-bin/Periodogram/nph-simpleupload">legacy interface</a>).</i>
+<br/>
+<br/>
+Notbale <i>offline</i> tools for period search: 
+<a href="http://www.vgoranskij.net/software/">WinEF</a> (Windows) by
+<a href="http://www.vgoranskij.net/">V. Goranskij</a>,
+<a href="https://www.univie.ac.at/tops/Period04/">Period04</a> (Java) by P. Lenz and M. Breger.
+
+</body>
+</html>
