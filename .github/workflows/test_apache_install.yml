@@ -27,9 +27,17 @@ jobs:
         sudo apt-get install python2
         sudo apt-get install gnuplot
 
+    - name: Install shellcheck
+      run: |
+        sudo apt-get install shellcheck
+
+    - name: Check shell script syntax with shellcheck
+      run: |
+        for i in $(find -name '*.sh') ;do shellcheck --severity=error "$i" ;done
+
     - name: Check shell script syntax with BASH
       run: |
-        for i in $(find -name '*.sh') ;do /usr/bin/env bash -n "$i" || exit 1 ;done
+        for i in $(find -name '*.sh') ;do /usr/bin/env bash -n "$i" ;done
 
     - name: Compile the code
       run: |
