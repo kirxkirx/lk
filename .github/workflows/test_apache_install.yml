@@ -27,6 +27,11 @@ jobs:
         sudo apt-get install -y apache2
         sudo a2enmod cgi
 
+    - name: Install python2 and ghnuplot
+      run: |
+        sudo apt-get install python2
+        sudo apt-get install gnuplot
+
     - name: Configure Apache to Enable CGI
       run: |
         sudo tee /etc/apache2/sites-available/000-default.conf > /dev/null <<EOF
@@ -53,7 +58,7 @@ jobs:
 
     - name: Change Owner of CGI Scripts
       run: |
-        sudo chown -R www-data:www-data /usr/lib/cgi-bin/your-web-app/
+        sudo chown -R www-data:www-data /usr/lib/cgi-bin/lk/
 
     - name: Test Apache Server
       run: |
