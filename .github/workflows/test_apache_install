@@ -1,0 +1,64 @@
+name: Test Apache CGI Setup
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Compile the code
+      run: |
+        cd cgi-bin/lk || exit 1
+        make
+
+    - name: Install Apache and Enable CGI
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y apache2
+        sudo a2enmod cgi
+
+    - name: Configure Apache to Enable CGI
+      run: |
+        sudo tee /etc/apache2/sites-available/000-default.conf > /dev/null <<EOF
+        <VirtualHost *:80>
+            ServerAdmin webmaster@localhost
+            DocumentRoot /var/www/html
+            ScriptAlias /cgi-bin/ /usr/lib/cgi-bin/
+            <Directory "/usr/lib/cgi-bin">
+             AllowOverride None
+             Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
+             SetHandler cgi-script
+             Require all granted
+            </Directory>
+            ErrorLog \${APACHE_LOG_DIR}/error.log
+            CustomLog \${APACHE_LOG_DIR}/access.log combined
+        </VirtualHost>
+        EOF
+        sudo systemctl restart apache2
+
+    - name: Copy Web Application Files to cgi-bin
+      run: |
+        sudo mkdir -p /usr/lib/cgi-bin/lk
+        sudo cp -r cgi-bin/lk/* /usr/lib/cgi-bin/lk/
+
+    - name: Change Owner of CGI Scripts
+      run: |
+        sudo chown -R www-data:www-data /usr/lib/cgi-bin/your-web-app/
+
+    - name: Test Apache Server
+      run: |
+        curl -I http://localhost/cgi-bin/lk/process_lightcurve.py
+
+    - name: Run the Application Test Script
+      run: |
+        test_lightcurves/test_localhost.sh
