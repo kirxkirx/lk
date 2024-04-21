@@ -5,14 +5,9 @@ This repository contains the source code of the web-based period search software
 ## Requirements
 
 - A CGI-enabled web server (tested with Apache)
-- Python 2.7 with `os`, `cgi`, and `cgitb` modules installed
+- Python 2 with `os`, `cgi`, and `cgitb` modules installed
 - gnuplot
 - GCC
-- GSL
-- BASH
-- awk
-- wget
-- GNU date
 
 ## Installation Instructions
 
