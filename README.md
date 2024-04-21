@@ -1,3 +1,5 @@
+[![test_apache_install](https://github.com/kirxkirx/vast/actions/workflows/test_apache_install.yml/badge.svg)](https://github.com/kirxkirx/vast/actions/workflows/test_apache_install.yml)
+
 # Web-based Period Search Software
 
 This repository contains the source code of the web-based period search software. You are welcome to install it on your own web server.
