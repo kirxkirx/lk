@@ -1,4 +1,4 @@
-[![test_apache_install](https://github.com/kirxkirx/vast/actions/workflows/test_apache_install.yml/badge.svg)](https://github.com/kirxkirx/vast/actions/workflows/test_apache_install.yml)
+[![test_apache_install](https://github.com/kirxkirx/lk/actions/workflows/test_apache_install.yml/badge.svg)](https://github.com/kirxkirx/lk/actions/workflows/test_apache_install.yml)
 
 # Web-based Period Search Software
 
