@@ -77,3 +77,15 @@ jobs:
     - name: Run the Application Test Script
       run: |
         test_lightcurves/test_localhost.sh
+
+    - name: Display Apache Error Log
+      if: failure()
+      run: |
+        echo "Displaying Apache Error Log:"
+        cat /var/log/apache2/error.log
+
+    - name: Display Apache Access Log
+      if: failure()
+      run: |
+        echo "Displaying Apache Access Log:"
+        cat /var/log/apache2/access.log
