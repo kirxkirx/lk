@@ -82,6 +82,8 @@ The program relies on XBitHack to include a list of removed data points instead 
 
 After completing the above steps, the period search service should be accessible at `http://my.server.net/lk`.
 
+An example of a deployment script may be found in the [GitHub Action worklow](https://github.com/kirxkirx/lk/blob/main/.github/workflows/test_apache_install.yml) testing this code.
+
 ## Copyleft
 
 Copyleft 2014-2024 Kirill Sokolovsky <kirx@kirx.net>
