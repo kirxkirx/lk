@@ -27,7 +27,7 @@ jobs:
         sudo apt-get install -y apache2
         sudo a2enmod cgi
 
-    - name: Install python2 and ghnuplot
+    - name: Install python2 and gnuplot
       run: |
         sudo apt-get install python2
         sudo apt-get install gnuplot
@@ -60,9 +60,19 @@ jobs:
       run: |
         sudo chown -R www-data:www-data /usr/lib/cgi-bin/lk/
 
+    - name: Copy Static Web Pages
+      run: |
+        sudo mkdir -p /var/www/html/lk
+        sudo cp -r htdocs/lk/* /var/www/html/lk/
+        sudo chown -R www-data:www-data /var/www/html/lk/
+
     - name: Test Apache Server
       run: |
         curl -I http://localhost/cgi-bin/lk/process_lightcurve.py
+
+    - name: Test Web Pages Accessibility
+      run: |
+        curl -I http://localhost/lk/index.html
 
     - name: Run the Application Test Script
       run: |
