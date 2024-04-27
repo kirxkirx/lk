@@ -94,7 +94,15 @@ void make_fake_phases(double *jd, float *phase, float *m, unsigned int N_obs, un
 void compute_phases(double *jd, float *phase, unsigned int N_obs, float f, double jd0){
  unsigned int i;
  double jdi_over_period;
- double a,b;
+
+ if ( NULL == jd ) {
+  fprintf(stderr, "ERROR in compute_phases(): jd is NULL\n");
+  exit( EXIT_FAILURE );
+ }
+ if ( NULL == phase ) {
+  fprintf(stderr, "ERROR in compute_phases(): phase is NULL\n");
+  exit( EXIT_FAILURE );
+ }
  
  for(i=0;i<N_obs;i++){
   jdi_over_period=(jd[i]-jd0)*(double)f;
@@ -111,25 +119,15 @@ int main( int argc, char **argv){
  FILE *lcfile;
 
  unsigned int N_obs,N_obs_fake;
- double *jd=malloc(MAX_N_OBS*sizeof(double));
- float *phase=malloc(2*MAX_N_OBS*sizeof(float));
- float *m=malloc(2*MAX_N_OBS*sizeof(double)); 
+ double *jd;
+ float *phase;
+ float *m;
  
- double jdmin,jdmax,T;
-
  unsigned int i;
 
  double JD0;
  float frequency;
  
- float min_x_plot,max_x_plot,min_y_plot,max_y_plot;
- float curX,curY;
- char curC;
-
- int closest;
-   
- int is_lightcurve_edited=0;
-
  if( argc<4 ){
   fprintf(stderr,"Usage: %s lightcurve.dat JD0 period\n",argv[0]);
   return 1;
@@ -138,8 +136,28 @@ int main( int argc, char **argv){
  JD0=atof(argv[2]);
  frequency=1.0/atof(argv[3]);
 
+ jd=malloc(MAX_N_OBS*sizeof(double));
+ if ( NULL == jd ) {
+  fprintf(stderr, "ERROR in main(): jd is NULL\n");
+  exit( EXIT_FAILURE );
+ }
+ phase=malloc(2*MAX_N_OBS*sizeof(float));
+ if ( NULL == phase ) {
+  fprintf(stderr, "ERROR in main(): phase is NULL\n");
+  exit( EXIT_FAILURE );
+ }
+ m=malloc(2*MAX_N_OBS*sizeof(double)); 
+ if ( NULL == m ) {
+  fprintf(stderr, "ERROR in main(): m is NULL\n");
+  exit( EXIT_FAILURE );
+ }
+
  // read the lightcurve from file
  lcfile=fopen(argv[1],"r");
+ if ( NULL == lcfile ) {
+  fprintf(stderr, "ERROR in main(): cannot open the input lightcurve file\n");
+  exit( EXIT_FAILURE );
+ }
  N_obs=0;
  while(-1<fscanf(lcfile,"%lf %f",&jd[N_obs],&m[N_obs])){
   N_obs++;
@@ -149,8 +167,9 @@ int main( int argc, char **argv){
  compute_phases( jd, phase, N_obs, frequency, JD0);
  make_fake_phases( jd, phase, m, N_obs, &N_obs_fake);
 
- for(i=0;i<N_obs_fake;i++)
+ for(i=0;i<N_obs_fake;i++){
   fprintf(stdout,"%+10.7lf %.5lf %.5lf\n", phase[i], m[i], jd[i]);
+ }
 
  free(jd);
  free(phase);

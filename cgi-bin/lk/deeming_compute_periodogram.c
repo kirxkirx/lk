@@ -108,6 +108,11 @@ void normalize_spectral_window_file(unsigned long int N_freq){
  unsigned long int i;
  
  periodogramfile=fopen("deeming.periodogram","r");
+ if ( NULL == periodogramfile ) {
+  fprintf(stderr, "ERROR in normalize_spectral_window_file(): (1) cannot open deeming.periodogram for reading\n");
+  exit( EXIT_FAILURE );
+ }
+ 
  i=0;
  while(-1<fscanf(periodogramfile,"%lf %lf %lf",&freq[i],&theta[i],&window[i]))i++;
  fclose(periodogramfile);
@@ -119,6 +124,10 @@ void normalize_spectral_window_file(unsigned long int N_freq){
  }
  max_F_to_max_W=max_F/max_W;
  periodogramfile=fopen("deeming.periodogram","w");
+ if ( NULL == periodogramfile ) {
+  fprintf(stderr, "ERROR in normalize_spectral_window_file(): (2) cannot open deeming.periodogram for reading\n");
+  exit( EXIT_FAILURE );
+ }
  for(i=0;i<N_freq;i++){
   window[i]=window[i]*max_F_to_max_W;
   fprintf(periodogramfile,"%5.10lf %5.10lf %5.10lf\n",freq[i],theta[i],window[i]);
@@ -149,9 +158,24 @@ static int compare_phases(const void *obs11, const void *obs22){
 
 double compute_LK_reciprocal_theta(double *jd, double *m, unsigned int N_obs, double f, double M){
  unsigned int i; 
- struct Obs *obs=malloc(N_obs*sizeof(struct Obs));
+ struct Obs *obs;
  double sum1,sum2;
  double jdi_over_period;
+
+ if ( NULL == jd ) {
+  fprintf(stderr, "ERROR in compute_LK_reciprocal_theta(): jd is NULL\n");
+  exit( EXIT_FAILURE );
+ }
+ if ( NULL == jd ) {
+  fprintf(stderr, "ERROR in compute_LK_reciprocal_theta(): m is NULL\n");
+  exit( EXIT_FAILURE );
+ }
+
+ obs=malloc(N_obs*sizeof(struct Obs));
+ if ( NULL == obs ) {
+  fprintf(stderr, "ERROR in compute_LK_reciprocal_theta(): obs is NULL\n");
+  exit( EXIT_FAILURE );
+ }
 
  for(sum2=0.0,i=0;i<N_obs;i++){   
   jdi_over_period=(jd[i]-jd[0])*f;
@@ -263,7 +287,7 @@ int main(int argc, char **argv){
 
  double M;
 
- double max_F,max_W,max_F_to_max_W;
+ //double max_F,max_W,max_F_to_max_W;
  
  double T_DFT; // f_Nyq = N/2T_DFT is the Nyquist frequency as defined in 2014MNRAS.445..437M
  
@@ -335,7 +359,7 @@ int main(int argc, char **argv){
 
 
  N_obs=0; // re-compute N_obs as not all lines in the input file might actually contain observations
- while(-1<read_lightcurve_point(lcfile,&jd[N_obs],&m[N_obs],&merr,&x,&y,&app,string)){
+ while(-1<read_lightcurve_point(lcfile,&jd[N_obs],&m[N_obs],&merr,&x,&y,&app,string,NULL)){
   if( jd[N_obs]==0.0 )continue;
   N_obs++;
  }

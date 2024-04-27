@@ -20,13 +20,17 @@ int main(int argc, char **argv){
  pid_t pid;
  int pid_status;
  int *child_pids;
- child_pids=malloc(n_fork*sizeof(int));
-
    
  // check if we have enough argumets
  if( argc<2 ){
   fprintf(stderr,"Usage: %s lk.periodogram\n",argv[0]);
   return 1;
+ }
+
+ child_pids=malloc(n_fork*sizeof(int));
+ if ( NULL == child_pids ) {
+  fprintf(stderr, "ERROR in compute_phases(): child_pids is NULL\n");
+  exit( EXIT_FAILURE );
  }
  
  // read the periodogram file
@@ -67,12 +71,12 @@ int main(int argc, char **argv){
  double freqrange=maxfreq-minfreq;
  
  double windowminfreq,windowmaxfreq,freqthetamax,thetamax;
- //double windowsize=0.05*freqrange;
  double windowsize=0.025*freqrange;
  
  windowminfreq=minfreq;
  while( windowminfreq<maxfreq ){
   thetamax=0.0;
+  freqthetamax=0.0;
   windowmaxfreq=windowminfreq+windowsize;
   if( windowmaxfreq>maxfreq )windowmaxfreq=maxfreq;
   i_fork++;
@@ -80,10 +84,17 @@ int main(int argc, char **argv){
   if( pid==0 ){
    for(i=N;i--;){
     // are we inside the window?
-    if( freq[i]<windowminfreq )continue;
-    if( freq[i]>windowmaxfreq )continue;
+    if( freq[i]<windowminfreq ){
+     continue;
+    }
+    if( freq[i]>windowmaxfreq ){
+     continue;
+    }
     // we are inside
-    if( thetamax<theta[i] ){thetamax=theta[i];freqthetamax=freq[i];}
+    if( thetamax<theta[i] ){
+     thetamax=theta[i];
+     freqthetamax=freq[i];
+    }
    }
    fprintf(stdout,"%lf %.8lf\n",freqthetamax,thetamax);
    return 0;

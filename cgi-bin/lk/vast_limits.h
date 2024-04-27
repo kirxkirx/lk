@@ -253,7 +253,7 @@
 // Should not be set for pruduction.
 //#define DEBUGFILES
 
-
+#define DEFAULT_PHOTOMETRY_ERROR_MAG 0.01
 
 
 // The macro below will tell the pre-processor that limits.h is already included

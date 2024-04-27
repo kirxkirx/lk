@@ -8,7 +8,10 @@ all: clean phase_lc lk_compute_periodogram formater_out_wfk find_point colstat p
 # debug asan
 #OPTFLAGS = -g -Wall -Wno-comment  -fsanitize=address,undefined -fsanitize-address-use-after-scope -O0
 #OPTFLAGS_SECURE = $(OPTFLAGS)
-# production
+## Static Analysis
+#OPTFLAGS := -g -Wall -Wpedantic -Wno-comment  -fanalyzer
+#OPTFLAGS_SECURE = $(OPTFLAGS)
+## production
 OPTFLAGS = -O3 -w `lib/set_good_march.sh` -ffast-math
 OPTFLAGS_SECURE = -O2 -w `lib/set_good_march.sh` -ffast-math -fPIE -fstack-protector-all -D_FORTIFY_SOURCE=2
 #

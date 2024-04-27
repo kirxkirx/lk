@@ -6,12 +6,10 @@
 int main(int argc, char **argv){
  
  FILE *lightcurvefile;
- int i,N;
+ int N;
  double jd,m;
  double jd_min,jd_max,m_min,m_max;
  
-// double jd_min_force=-2500000.0;
-// double jd_max_force=2500000.0;
  double jd_min_force=-1e32;
  double jd_max_force=1e32;
  
@@ -34,10 +32,15 @@ int main(int argc, char **argv){
  
  lightcurvefile=fopen(argv[1],"r");
  if( NULL==lightcurvefile ){
-  fprintf(stderr,"ERROR: cannot open lightcurve file %s\n",argv[1]);
-  return 1;
+  fprintf(stderr,"ERROR in main(): cannot open lightcurve file %s\n",argv[1]);
+  exit( EXIT_FAILURE );
  }
  outlightcurvefile=fopen("lightcurve.tmp","w");
+ if ( NULL == outlightcurvefile ) {
+  fprintf(stderr, "ERROR in main(): cannot open the output lightcurve file\n");
+  exit( EXIT_FAILURE );
+ }
+ m_min=m_max=0.0; // catch lightcurve reading problems
  N=0;
  while(-1<fscanf(lightcurvefile,"%lf %lf",&jd,&m)){
   if( jd<jd_min_force )continue;
@@ -59,9 +62,26 @@ int main(int argc, char **argv){
  fclose(outlightcurvefile);
  system("mv lightcurve.tmp lightcurve.dat");
  
+ if( 0.0 == m_min && m_max == 0.0 ) {
+  fprintf(stderr, "ERROR in main(): m_min = m_max = 0.0\n");
+  exit( EXIT_FAILURE );
+ }
+ if( N == 0 ){
+  fprintf(stderr, "ERROR in main(): N = 0\n");
+  exit( EXIT_FAILURE );
+ }
+ 
  // reusing lightcurvefile, outlightcurvefile
  lightcurvefile=fopen("plot_range.txt","w"); 
+ if( NULL==lightcurvefile ){
+  fprintf(stderr,"ERROR in main(): cannot open plot_range.txt\n");
+  exit( EXIT_FAILURE );
+ }
  outlightcurvefile=fopen("plot_format.txt","w");
+ if( NULL==outlightcurvefile ){
+  fprintf(stderr,"ERROR in main(): cannot open plot_format.txt\n");
+  exit( EXIT_FAILURE );
+ }
  // select plot range based on amplitude
  if( m_max-m_min > 0.05 ) {
   fprintf(stdout,"The lightcurve contains %d points, the magnitude range is %.2lf - %.2lf, peak-to-peak amplitude %.2lf mag.\n",N,m_min,m_max, (m_max-m_min));
@@ -89,16 +109,28 @@ int main(int argc, char **argv){
  fclose(lightcurvefile);
 
  lightcurvefile=fopen("lightcurve_range.txt","w"); 
+ if ( NULL == lightcurvefile ) {
+  fprintf(stderr, "ERROR in main(): cannot open lightcurve_range.txt\n");
+  exit( EXIT_FAILURE );
+ }
  fprintf(lightcurvefile,"%.5lf %.5lf",jd_min,jd_max);
  fclose(lightcurvefile);
 
  lightcurvefile=fopen("jd0.txt","r");
+ if ( NULL == lightcurvefile ) {
+  fprintf(stderr, "ERROR in main(): cannot open jd0.txt\n");
+  exit( EXIT_FAILURE );
+ }
  fscanf(lightcurvefile,"%lf",&jd0);
  fclose(lightcurvefile);
 
  jd_max-=jd0;
  jd_min-=jd0;
  lightcurvefile=fopen("lightcurve_plot_range.txt","w"); 
+ if ( NULL == lightcurvefile ) {
+  fprintf(stderr, "ERROR in main(): cannot open lightcurve_plot_range.txt\n");
+  exit( EXIT_FAILURE );
+ }
  fprintf(lightcurvefile,"[%.5lf:%.5lf]",jd_min-0.05*(jd_max-jd_min),jd_max+0.05*(jd_max-jd_min));
  fclose(lightcurvefile);
 

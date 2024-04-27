@@ -21,13 +21,23 @@
 #define PHASE_MAX  1.05
 #define PHASE_RANGE (PHASE_MAX-PHASE_MIN)
 
-int find_closest(double x, double y, double *X, double *Y,int N, double new_X1, double new_X2, double new_Y1, double new_Y2){
+int find_closest(double x, double y, double *X, double *Y, int N, double new_X1, double new_X2, double new_Y1, double new_Y2){
  double y_to_x_scaling_factor=fabsf(new_X2-new_X1)/fabsf(new_Y2-new_Y1);
  int i;
  double best_dist;
  int best_dist_num=0;
+
+ if ( NULL == X ) {
+  fprintf(stderr, "ERROR in find_closest(): X is NULL\n");
+  exit( EXIT_FAILURE );
+ }
+ if ( NULL == Y ) {
+  fprintf(stderr, "ERROR in find_closest(): Y is NULL\n");
+  exit( EXIT_FAILURE );
+ }
+
  best_dist=(x-X[0])*(x-X[0])+(y-Y[0])*(y-Y[0])*y_to_x_scaling_factor*y_to_x_scaling_factor; //!!
- //for(i=1;i<N;i++){
+
  for(i=0;i<N;i++){
   if( (x-X[i])*(x-X[i])+(y-Y[i])*(y-Y[i])*y_to_x_scaling_factor*y_to_x_scaling_factor<best_dist ){
    best_dist=(x-X[i])*(x-X[i])+(y-Y[i])*(y-Y[i])*y_to_x_scaling_factor*y_to_x_scaling_factor;
@@ -50,11 +60,10 @@ int main(int argc, char **argv){
  double clickY=atof(argv[3]);
  double targetX=clickX-CORNER1_X;
  double targetY=CORNER1_Y-clickY;
-// double targetY=CORNER1_Y-clickY; 
 
- double *jd=malloc(MAX_POINTS*sizeof(double));
- double *phase=malloc(MAX_POINTS*sizeof(double));
- double *m=malloc(MAX_POINTS*sizeof(double));
+ double *jd;
+ double *phase;
+ double *m;
 
  FILE *phasefile;
  FILE *phaserangefile;
@@ -65,6 +74,22 @@ int main(int argc, char **argv){
  int N;
  
  FILE *selectedfile;
+
+ jd=malloc(MAX_POINTS*sizeof(double));
+ if ( NULL == jd ) {
+  fprintf(stderr, "ERROR in main(): jd is NULL\n");
+  exit( EXIT_FAILURE );
+ }
+ phase=malloc(MAX_POINTS*sizeof(double));
+ if ( NULL == phase ) {
+  fprintf(stderr, "ERROR in main(): phase is NULL\n");
+  exit( EXIT_FAILURE );
+ }
+ m=malloc(MAX_POINTS*sizeof(double)); 
+ if ( NULL == m ) {
+  fprintf(stderr, "ERROR in main(): m is NULL\n");
+  exit( EXIT_FAILURE );
+ }
 
  phasefile=fopen(argv[1],"r");
  if(NULL==phasefile){
