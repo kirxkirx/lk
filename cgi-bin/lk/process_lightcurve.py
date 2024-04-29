@@ -598,9 +598,16 @@ if os.path.exists(file_path):
     if fn != 'lightcurve.dat':
         os.remove(file_path)
 
-
 # Everything is fine - redirect
-results_page_url = 'http://' + fullhostname + \
+if 'HTTPS' in os.environ and os.environ['HTTPS'] == 'on':
+    # HTTPS request
+    protocol = 'https'
+else:
+    # HTTP request
+    protocol = 'http'
+    
+# Everything is fine - redirect
+results_page_url = protocol + '://' + fullhostname + \
     service_name_for_url + dirname + 'index.html'
 
 # That's for debugging - print out the detailed log
