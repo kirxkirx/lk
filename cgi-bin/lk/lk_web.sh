@@ -737,10 +737,15 @@ else
  echo "<br><br>Phase range for plots: <input type=\"radio\" name=\"phaserange\" value=\"1\" checked>&nbsp;-0.5 to 1.0&nbsp;&nbsp;&nbsp;<input type=\"radio\" name=\"phaserange\" value=\"2\">&nbsp;0.0 to 2.0&nbsp;&nbsp;&nbsp;<input type=\"radio\" name=\"phaserange\" value=\"3\">&nbsp;0.0 to 1.0"  >> index.html
 fi
 
+ORIGINAL_LIGHTCURVE_FILENAME=""
+if [ -s "original_lightcurve_filename.txt" ];then
+ ORIGINAL_LIGHTCURVE_FILENAME="Input lightcurve data file: <span style=\"color: green;\">$(head -n1 original_lightcurve_filename.txt)</span>"
+fi
+
 echo "
 </form>
 
-<pre>
+<pre>$ORIGINAL_LIGHTCURVE_FILENAME 
 Edited lightcurve data file: <a href=\"$EDITEDLIGHTCURVEFILE\">$EDITEDLIGHTCURVEFILE</a>
 $LCSTATS
 

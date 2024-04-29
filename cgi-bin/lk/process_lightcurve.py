@@ -66,6 +66,20 @@ def is_suspicious_filename(filename):
     # If none of the above checks are true, the filename is not suspicious
     return False
 
+def sanitize_filename(filename):
+    # Define the maximum length for the filename
+    MAX_LENGTH = 255
+
+    # Remove any leading/trailing whitespaces
+    filename = filename.strip()
+
+    # Replace any special characters with underscores
+    filename = re.sub(r'[^a-zA-Z0-9._-]', '_', filename)
+
+    # Truncate the filename if it exceeds the maximum length
+    filename = filename[:MAX_LENGTH]
+
+    return filename
 
 def is_number(s):
     # Check if the input parameters are numbers
@@ -318,6 +332,7 @@ Content-Type: text/html\n
 </body></html>
 """ % (message,)
         sys.exit(0)  # Just quit
+    
 
 safe_serverside_filename_for_original_lightcurve_file = 'original_lightcurve_file.txt'
 
@@ -512,6 +527,16 @@ Content-Type: text/html\n
             sys.exit(1)  # Exit the script
 
         f.close()
+        
+        # Save the original filename to a text file
+        original_filename = sanitize_filename(fileitem.filename)
+        with open(os.path.join(dirname, 'original_lightcurve_filename.txt'), 'w') as f:
+            f.write(original_filename)
+            # When using the with statement, the file is automatically closed when the block
+            # inside the with statement is exited. However, explicitly calling f.close() provides clarity
+            # and ensures that the file is closed immediately after writing.
+            f.close()
+
         message = 'The lightcurve file "' + fn + '" was uploaded successfully! <br>' + \
                   'Pmax:  ' + pmax + 'd <br> ' + \
                   'Pmin:  ' + pmin + 'd <br> ' + \
