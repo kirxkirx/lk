@@ -12,7 +12,7 @@ if [ -d /usr/local/lib ];then
 fi
 
 ####### Test that all external programs are available
-for TESTED_PROGRAM in readlink basename dirname awk df grep head tail ls sort cat file timeout gnuplot ;do
+for TESTED_PROGRAM in readlink basename dirname awk df grep head tail ls sort cat file timeout gnuplot tar gzip ;do
  if ! command -v $TESTED_PROGRAM &>/dev/null ;then
   echo "<html>
 <pre>
@@ -117,7 +117,7 @@ $REAL_SCRIPT_NAME ERROR: funny filename #$LIGHTCURVEFILE# #$SANITIZED_FILEPATH#
  exit 1
 fi
 
-LCFILE=$(basename "$LIGHTCURVEFILE")
+LCFILE=$(basename "$SANITIZED_FILEPATH")
 if [ -z "$LCFILE" ];then
  echo "<html>
 <pre>
@@ -128,7 +128,7 @@ $REAL_SCRIPT_NAME ERROR: LCFILE is not set
  exit 1
 fi
 
-DIRNAME=$(dirname "$LIGHTCURVEFILE")
+DIRNAME=$(dirname "$SANITIZED_FILEPATH")
 if [ -z "$DIRNAME" ];then
  echo "<html>
 <pre>
@@ -194,38 +194,41 @@ fi
 echo "############## $0 ##############" 
 
 # Check if the lightcurve file was actually uploaded
-if [ ! -f "$LIGHTCURVEFILE" ];then
+if [ ! -f "$SANITIZED_FILEPATH" ];then
  echo "<html>
 <pre>
-$REAL_SCRIPT_NAME ERROR: $LIGHTCURVEFILE does not exist
+$REAL_SCRIPT_NAME ERROR: $SANITIZED_FILEPATH does not exist
 </pre>
 </html>
 " > lk_web.log
  exit 1
 fi
-if [ ! -s "$LIGHTCURVEFILE" ];then
+if [ ! -s "$SANITIZED_FILEPATH" ];then
  echo "<html>
 <pre>
-$REAL_SCRIPT_NAME ERROR: $LIGHTCURVEFILE is empty
+$REAL_SCRIPT_NAME ERROR: $SANITIZED_FILEPATH is empty
 </pre>
 </html>
 " > lk_web.log
  exit 1
 fi
 # check the actual content of the input file
-file "$LIGHTCURVEFILE" | grep --quiet 'text'
+file "$SANITIZED_FILEPATH" | grep --quiet 'text'
 if [ $? -ne 0 ];then
  echo "<html>
 <pre>
-$REAL_SCRIPT_NAME ERROR: $LIGHTCURVEFILE does not seem to contain lightcurve data in text format
+$REAL_SCRIPT_NAME ERROR: $SANITIZED_FILEPATH does not seem to contain lightcurve data in text format
 </pre>
 </html>
 " > lk_web.log
- if [ -f "$LIGHTCURVEFILE" ];then
-  rm -f "$LIGHTCURVEFILE"
+ if [ -f "$SANITIZED_FILEPATH" ];then
+  rm -f "$SANITIZED_FILEPATH"
  fi
  exit 1
 fi
+
+# Make up tar archive name
+TAR_ARCHIVE_NAME="$(basename $DIRNAME).tar.gz"
 
 # Change to the work directory
 echo "Changing to the working directory $DIRNAME" 
@@ -751,9 +754,13 @@ $LCSTATS
 
 <!--#include virtual=\"removed_points.html\" -->
 </pre>
-Please find below the lightcurve (magnitude plotted as a function of time) as well as phased lightcurves corresponding to ten highest peaks identified on <b>Lafler & Kinman and Deeming (DFT)</b> periodograms in the specified trial period range.<br>
-You may remove an outlier lightcurve point by clicking on it on any of the lightcurve plots.
-Press \"Compute\" again to re-compute periodograms without the delited points.
+Please find below the lightcurve (magnitude plotted as a function of time)
+as well as phased lightcurves corresponding to the ten highest peaks identified
+on <b>Lafler & Kinman and Deeming (DFT)</b> periodograms in the specified trial period range ($PMIN to $PMAX days).
+You may remove an outlier lightcurve point by clicking on it in any of the lightcurve plots.
+Press \"Compute\" again to re-compute periodograms without the deleted points.
+You may <a href=\"$TAR_ARCHIVE_NAME\">download the .tar.gz archive containing this results page</a> and the data files it links to.
+The interactive features will not work for the static downloaded copy.
 <hr>
 <h2>Lafler & Kinman method</h2>
 <TABLE width=\"750\">
@@ -1045,4 +1052,14 @@ wait
 
 echo "index.html created"
 
+# make or update the download-all archive
+if [ -f "$TAR_ARCHIVE_NAME" ];then
+ rm -f "$TAR_ARCHIVE_NAME"
+fi
+cd .. || exit 1
+tar -czf "$TAR_ARCHIVE_NAME" $(basename "$TAR_ARCHIVE_NAME" .tar.gz) && mv "$TAR_ARCHIVE_NAME" $(basename "$TAR_ARCHIVE_NAME" .tar.gz)
+
+echo "$TAR_ARCHIVE_NAME created"
+
+# we are done here
 exit 0

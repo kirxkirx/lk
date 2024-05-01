@@ -22,11 +22,11 @@ service_name_for_url = '/lk/'
 file_readwrite_buffer_size = 8192
 MAX_FILE_SIZE = 10000000  # Maximum file size in bytes (10 MB)
 # MAX_FILE_SIZE = 1000 # 1 KB for testing
-
+MAX_INPUT_FILENAME_LENGTH = 80
 
 def is_suspicious_filename(filename):
     # Define a maximum reasonable length for a filename
-    MAX_LENGTH = 80
+    MAX_LENGTH = MAX_INPUT_FILENAME_LENGTH
 
     # List of suspicious extensions
     SUSPICIOUS_EXTENSIONS = [
@@ -67,14 +67,14 @@ def is_suspicious_filename(filename):
     return False
 
 def sanitize_filename(filename):
-    # Define the maximum length for the filename
-    MAX_LENGTH = 255
+    # Define the maximum length for the filename, see also is_suspicious_filename() and truncate_string() for JobID
+    MAX_LENGTH = MAX_INPUT_FILENAME_LENGTH
 
     # Remove any leading/trailing whitespaces
     filename = filename.strip()
 
     # Replace any special characters with underscores
-    filename = re.sub(r'[^a-zA-Z0-9._-]', '_', filename)
+    filename = re.sub(r'[^a-zA-Z0-9._+-]', '_', filename)
 
     # Truncate the filename if it exceeds the maximum length
     filename = filename[:MAX_LENGTH]
@@ -110,7 +110,7 @@ def is_valid_string(s):
         return False
 
     # Check if all characters in the string are alphanumeric or underscore
-    return all(c.isalnum() or c == '_' or c == '.' for c in s)
+    return all(c.isalnum() or c == '-' or c == '+' or c == '_' or c == '.' for c in s)
 
 
 def is_text_but_not_script(file_path):
@@ -358,6 +358,8 @@ if fileupload == "True":
     random.seed()  # initialize using current system time, just in case...
     for i in range(8):
         JobID = JobID + random.choice(string.letters)
+    # Add the input lightcurve file name for convenience
+    JobID = JobID + '__' + sanitize_filename(fileitem.filename).replace('.','_')
     # Take care of the other inout parameters appropriate for the new file
     # upload
     applyhelcor = truncate_string(form.getvalue('applyhelcor'), 3)
@@ -387,7 +389,10 @@ J2Kposition=%s.
 else:
     # we'll be processing a previously uploaded file
     # make sure the supplied JobID does not look suspicious
-    JobID = truncate_string(form.getfirst('jobid', 'True'), 20)
+    #
+    #  12345678901234567
+    # 'lk14510GAXQvnDy__'
+    JobID = truncate_string(form.getfirst('jobid', 'True'), 18 + MAX_INPUT_FILENAME_LENGTH)
     if not is_valid_string(JobID):
         message = message + 'Bad string JobID'
         print """\
@@ -458,7 +463,7 @@ Content-Type: text/html\n
 
 message = message + 'Job ID:  ' + JobID + ' <br>'
 
-# one way or the ther, JobID should be the valid string
+# one way or the other, JobID should be the valid string
 if not is_valid_string(JobID):
     message = message + 'Bad string JobID'
     print """\
