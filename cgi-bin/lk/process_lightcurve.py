@@ -26,7 +26,7 @@ MAX_FILE_SIZE = 10000000  # Maximum file size in bytes (10 MB)
 
 def is_suspicious_filename(filename):
     # Define a maximum reasonable length for a filename
-    MAX_LENGTH = 64
+    MAX_LENGTH = 80
 
     # List of suspicious extensions
     SUSPICIOUS_EXTENSIONS = [
