@@ -22,7 +22,22 @@ REAL_SCRIPT_NAME=$(basename "$REAL_SCRIPT_PATH")
 REAL_SCRIPT_DIR=$(dirname "$REAL_SCRIPT_PATH")
 export PATH="$REAL_SCRIPT_DIR:$PATH"
 
+PROTOCOL="http"
+# Check if the script was accessed via HTTPS
+if [ "$REQUEST_SCHEME" = "https" ]; then
+ # Apache web server sets REQUEST_SCHEME=https
+ PROTOCOL="https"
+elif [ "$HTTPS" = "on" ]; then
+ # nginx 
+ PROTOCOL="https"
+elif echo "$HTTP_REFERER" | grep --quiet 'https:' ; then
+ # Alternatively, check where we are coming from - python web server sets HTTP_REFERER=https://...
+ PROTOCOL="https"
+fi
+
+# That's for debugging
 STRING=$(env)
+
 IMAGE="${REQUEST_URI/$SCRIPT_NAME/}"
 IMAGE="${IMAGE/\?/ }"
 IMAGE="${IMAGE/\,/ }"
@@ -282,7 +297,7 @@ echo "Content-Type: text/html
 
 <html>
 <head>
-<meta http-equiv=\"Refresh\" content=\"0; url=http://$HTTP_HOST/lk/$DIRNAME\"> 
+<meta http-equiv=\"Refresh\" content=\"0; url=$PROTOCOL://$HTTP_HOST/lk/$DIRNAME/\"> 
 </head>
 </html>
 "
@@ -294,6 +309,8 @@ echo "Content-Type: text/html
 <html>
 <pre>
 $QUERY_STRING
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+url=$PROTOCOL://$HTTP_HOST/lk/$DIRNAME/
 ###############################
 $IMAGE
 $LCFILE

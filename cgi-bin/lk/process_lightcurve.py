@@ -579,11 +579,27 @@ if not is_text_but_not_script(file_path):
     # apache logs
     sys.exit(1)
 
+# The script needs HTTP_HOST variable to be set for its normal operations
+# Note that the maximum lenght of HTTP_HOST is hardcode here
+fullhostname = truncate_string(os.getenv('HTTP_HOST', 'localhost'), 20)
 
-fullhostname = truncate_string(os.getenv('HTTP_HOST'), 20)
 
-message = message + '<br><br>The output will be written to <a href=\"http://' + fullhostname + \
-    service_name_for_url + dirname + '\">http://' + fullhostname + '/astrometry_engine/' + dirname + '</a><br><br>'
+# Default protocol
+protocol = 'http'
+
+# Check if the script was accessed via HTTPS
+if 'REQUEST_SCHEME' in os.environ and os.environ['REQUEST_SCHEME'] == 'https':
+    # Apache web server sets REQUEST_SCHEME=https
+    protocol = 'https'
+elif 'HTTPS' in os.environ and os.environ['HTTPS'] == 'on':
+    # Nginx sets HTTPS=on
+    protocol = 'https'
+elif 'HTTP_REFERER' in os.environ and 'https:' in os.environ['HTTP_REFERER']:
+    # Check if the referer contains 'https:'
+    protocol = 'https'
+
+message = message + '<br><br>The output will be written to <a href=\"' + protocol + '://' + fullhostname + \
+    service_name_for_url + dirname + '\">' + protocol + '://' + fullhostname + '/astrometry_engine/' + dirname + '</a><br><br>'
 
 # Run the actual command
 syscmd = 'export PATH=$PWD:$PATH; echo ' + phaserange + ' > ' + dirname + 'phaserange_type.input ; echo ' + asassnband + ' > ' + dirname + 'asassnband_' + asassnband + '.input ;  echo ' + applyhelcor + ' ' + timesys + ' ' + J2Kposition + ' > ' + \
@@ -604,12 +620,14 @@ if os.path.exists(file_path):
         os.remove(file_path)
 
 # Everything is fine - redirect
-if 'HTTPS' in os.environ and os.environ['HTTPS'] == 'on':
-    # HTTPS request
-    protocol = 'https'
-else:
-    # HTTP request
-    protocol = 'http'
+
+# updated and moved up
+#if 'HTTPS' in os.environ and os.environ['HTTPS'] == 'on':
+#    # HTTPS request
+#    protocol = 'https'
+#else:
+#    # HTTP request
+#    protocol = 'http'
     
 # Everything is fine - redirect
 results_page_url = protocol + '://' + fullhostname + \

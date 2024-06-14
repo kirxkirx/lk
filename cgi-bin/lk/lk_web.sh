@@ -72,6 +72,19 @@ REAL_SCRIPT_DIR=$(dirname "$REAL_SCRIPT_PATH")
 REAL_TAI_MINUS_UTC_FILE_PATH="$REAL_SCRIPT_DIR/heliocentric_correction/tai-utc.dat"
 PROGRAM_TIMEOUT_SECONDS=900
 
+PROTOCOL="http"
+# Check if the script was accessed via HTTPS
+if [ "$REQUEST_SCHEME" = "https" ]; then
+ # Apache web server sets REQUEST_SCHEME=https
+ PROTOCOL="https"
+elif [ "$HTTPS" = "on" ]; then
+ # nginx 
+ PROTOCOL="https"
+elif echo "$HTTP_REFERER" | grep --quiet 'https:' ; then
+ # Alternatively, check where we are coming from - python web server sets HTTP_REFERER=https://...
+ PROTOCOL="https"
+fi
+
 ####### Parse command line arguments
 LIGHTCURVEFILE="$1"
 if [ -z "$LIGHTCURVEFILE" ];then
@@ -700,7 +713,7 @@ function fn_estimate_period_accuracy (form,period) {
 <CENTER>
 <h2>Period search results</h2>
 <br>
-<form name=\"mainform\" enctype=\"multipart/form-data\" action=\"http://$HTTP_HOST/cgi-bin/lk/process_lightcurve.py\" method=\"post\">
+<form name=\"mainform\" enctype=\"multipart/form-data\" action=\"$PROTOCOL://$HTTP_HOST/cgi-bin/lk/process_lightcurve.py\" method=\"post\">
 Max period:&nbsp;<input type=\"text\" name=\"pmax\" value=\"$PMAX\" size=3>d,&nbsp;&nbsp;
 Min period:&nbsp;<input type=\"text\" name=\"pmin\" value=\"$PMIN\" size=3>d,&nbsp;&nbsp;
 Max phase shift:&nbsp;<input type=\"text\" name=\"phaseshift\" value=\"$PSHIFT\" size=3>&nbsp;&nbsp;  
@@ -727,7 +740,7 @@ Max phase shift:&nbsp;<input type=\"text\" name=\"phaseshift\" value=\"$PSHIFT\"
 </tr>
 </TABLE>
 <font style=\"font-size:x-small;color:#A0A0A0;\">
-Note, you'll need to <a style=\"font-size:x-small;color:#A0A0A0;\" href=\"http://$HTTP_HOST/lk\">re-upload the lightcurve file</a> to get back to the full JD range after exploring a limited one.
+Note, you'll need to <a style=\"font-size:x-small;color:#A0A0A0;\" href=\"$PROTOCOL://$HTTP_HOST/lk\">re-upload the lightcurve file</a> to get back to the full JD range after exploring a limited one.
 </font>
 " > index.html
 # note awk '{print $1}' and awk '{print $2}' above!
@@ -767,7 +780,7 @@ The interactive features will not work for the static downloaded copy.
 <tr><th>Lightcurve</th><th>Lafler & Kinman periodogram</th></tr>
 <tr>
 <td><center>
-<A HREF=http://$HTTP_HOST/cgi-bin/lk/process_click.sh/$DIRNAME/lightcurve.png>
+<A HREF=$PROTOCOL://$HTTP_HOST/cgi-bin/lk/process_click.sh/$DIRNAME/lightcurve.png>
 <img src=\"lightcurve.png\" ISMAP></img>
 </A>
 <a style=\"font-size:x-small;color:#A0A0A0;\" href=\"$LCFILE\">data</a>&nbsp;&nbsp;&nbsp;" >> index.html
@@ -822,7 +835,7 @@ echo "
 </CENTER></td></tr>
 <td>
 <CENTER>JD<sub>max</sub> = $JD0 + $PERIOD x E</br>
-<A HREF=http://$HTTP_HOST/cgi-bin/lk/process_click.sh/$DIRNAME/phase_lc_$N.png>
+<A HREF=$PROTOCOL://$HTTP_HOST/cgi-bin/lk/process_click.sh/$DIRNAME/phase_lc_$N.png>
 <img src=\"phase_lc_$N.png\" ISMAP></img>
 </A>
 <a style=\"font-size:x-small;color:#A0A0A0;\" href=\"phase_lc_$N.dat\">data</a>&nbsp;&nbsp;&nbsp;" >> index.html
@@ -879,7 +892,7 @@ echo "</TABLE>
 <tr><th>Lightcurve</th><th>Deeming (DFT) periodogram</th></tr>
 <tr>
 <td><center>
-<A HREF=http://$HTTP_HOST/cgi-bin/lk/process_click.sh/$DIRNAME/lightcurve.png>
+<A HREF=$PROTOCOL://$HTTP_HOST/cgi-bin/lk/process_click.sh/$DIRNAME/lightcurve.png>
 <img src=\"lightcurve.png\" ISMAP></img>
 </A>
 <a style=\"font-size:x-small;color:#A0A0A0;\" href=\"$LCFILE\">data</a>&nbsp;&nbsp;&nbsp;
@@ -933,7 +946,7 @@ echo "
 </CENTER></td></tr>
 <td>
 <CENTER>JD<sub>max</sub> = $JD0 + $PERIOD x E</br>
-<A HREF=http://$HTTP_HOST/cgi-bin/lk/process_click.sh/$DIRNAME/phase_lc_$N.png>
+<A HREF=$PROTOCOL://$HTTP_HOST/cgi-bin/lk/process_click.sh/$DIRNAME/phase_lc_$N.png>
 <img src=\"phase_lc_$N.png\" ISMAP></img>
 </A>
 <a style=\"font-size:x-small;color:#A0A0A0;\" href=\"phase_lc_$N.dat\">data</a>&nbsp;&nbsp;&nbsp;
