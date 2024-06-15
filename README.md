@@ -55,7 +55,7 @@ sudo mount -t tmpfs -o size=1G,mode=0777 tmpfs /space
 It is recommended to create a cron job to regularly clean and re-mount this directory:
 
 ```cron
-00 01 * * * rm -rf /space/ /space/.* &>/dev/null; umount /space; mount -t tmpfs -o size=1G,mode=0777 tmpfs /space
+00 01 * * * rm -rf /space/* /space/.* &>/dev/null; umount /space; mount -t tmpfs -o size=1G,mode=0777 tmpfs /space
 ```
 
 ### 5. Change File Ownership
