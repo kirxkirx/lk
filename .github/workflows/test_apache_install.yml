@@ -14,7 +14,7 @@ jobs:
 
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Install Apache and Enable CGI
       run: |
@@ -22,9 +22,8 @@ jobs:
         sudo apt-get install -y apache2
         sudo a2enmod cgi
 
-    - name: Install python2 and gnuplot
+    - name: Install gnuplot
       run: |
-        sudo apt-get install python2
         sudo apt-get install gnuplot
 
     - name: Install shellcheck
