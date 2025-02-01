@@ -25,6 +25,10 @@ jobs:
     - name: Install gnuplot
       run: |
         sudo apt-get install gnuplot
+    
+    - name: Install GSL
+      run: |
+        sudo apt-get install libgsl-dev
 
     - name: Install shellcheck
       run: |
