@@ -1,27 +1,18 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 import cgi
 import os
-
-# For JobID generation
 import random
 import string
-
-# for sleep
 import time
-# for sys
 import sys
-
-# use urlparse to get server name
-from urlparse import urlparse
-
 import re
+from urllib.parse import urlparse  # Updated from urlparse for Python 3
 
 # Global script parameters
 service_name_for_url = '/lk/'
 file_readwrite_buffer_size = 8192
 MAX_FILE_SIZE = 10000000  # Maximum file size in bytes (10 MB)
-# MAX_FILE_SIZE = 1000 # 1 KB for testing
 MAX_INPUT_FILENAME_LENGTH = 80
 
 def is_suspicious_filename(filename):
@@ -47,7 +38,6 @@ def is_suspicious_filename(filename):
         '.jpeg']
 
     # Regular expression for unusual characters
-    # Adjust the regex pattern according to your requirements
     unusual_chars_pattern = re.compile(r'[^a-zA-Z0-9._+\-]')
 
     # Check if the filename is too long
@@ -63,87 +53,66 @@ def is_suspicious_filename(filename):
     if unusual_chars_pattern.search(filename):
         return True
 
-    # If none of the above checks are true, the filename is not suspicious
     return False
 
 def sanitize_filename(filename):
-    # Define the maximum length for the filename, see also is_suspicious_filename() and truncate_string() for JobID
     MAX_LENGTH = MAX_INPUT_FILENAME_LENGTH
-
-    # Remove any leading/trailing whitespaces
     filename = filename.strip()
-
-    # Replace any special characters with underscores
     filename = re.sub(r'[^a-zA-Z0-9._+-]', '_', filename)
-
-    # Truncate the filename if it exceeds the maximum length
     filename = filename[:MAX_LENGTH]
-
     return filename
 
 def is_number(s):
-    # Check if the input parameters are numbers
     try:
-        float(s)  # for int, long and float
+        float(s)
     except ValueError:
         return False
     return True
 
-
 def truncate_string(input_string, N):
-    # Truncate the string to a maximum of N characters
-    truncated_string = input_string[:N]
-    return truncated_string
-
+    if input_string is None:
+        return ''
+    return str(input_string)[:N]
 
 def is_valid_string(s):
-    # Check if the string does not start with "."
     if s.startswith("."):
         return False
-
-    # Check if the string contains ".."
     if ".." in s:
         return False
-
-    # Check if the string contains ".."
     if "/" in s:
         return False
-
-    # Check if all characters in the string are alphanumeric or underscore
     return all(c.isalnum() or c == '-' or c == '+' or c == '_' or c == '.' for c in s)
-
 
 def is_text_but_not_script(file_path):
     try:
         with open(file_path, 'rb') as file:
-            # Read up to 1024 bytes from the file
             snippet = file.read(1024)
-
-            # Check for null bytes to determine if it's a binary file
-            if '\0' in snippet:
+            
+            # Check for null bytes (binary file)
+            if b'\x00' in snippet:
                 return False
 
-            # Check for common script patterns
+            # Convert to string for pattern matching
+            snippet_str = snippet.decode('utf-8', errors='ignore')
+            
             script_patterns = [
-                '<?php', '<?=', '<?',          # PHP
-                '#!/usr/bin/env python',       # Python
-                '#!/usr/bin/python',           # Python with specific path
-                '#!/usr/bin/env perl',         # Perl
-                '#!/usr/bin/perl',             # Perl with specific path
-                '#!/bin/sh', '#!/bin/bash',    # Shell scripts
-                '#!/usr/bin/env sh',           # Shell with env
-                '#!/usr/bin/env bash',         # Bash with env
-                '#!/'                          # General script-like combination
+                '<?php', '<?=', '<?',
+                '#!/usr/bin/env python',
+                '#!/usr/bin/python',
+                '#!/usr/bin/env perl',
+                '#!/usr/bin/perl',
+                '#!/bin/sh', '#!/bin/bash',
+                '#!/usr/bin/env sh',
+                '#!/usr/bin/env bash',
+                '#!/'
             ]
 
-            if any(pattern in snippet for pattern in script_patterns):
+            if any(pattern in snippet_str for pattern in script_patterns):
                 return False
 
             return True
     except IOError:
-        # Handle any I/O errors
         return False
-
 
 def is_archive(filename):
     with open(filename, 'rb') as file:
@@ -165,7 +134,6 @@ def is_archive(filename):
 
     return False
 
-
 def fbuffer(f, chunk_size):
     total_size = 0
     while True:
@@ -177,9 +145,26 @@ def fbuffer(f, chunk_size):
             raise ValueError("File size exceeds the limit")
         yield chunk
 
+def print_html_response(message, redirect_url=None):
+    print("Content-Type: text/html\n")
+    html = ["<html>"]
+    
+    if redirect_url:
+        html.append("<head>")
+        html.append('<meta http-equiv="Refresh" content="0; url={0}">'.format(redirect_url))
+        html.append("</head>")
+    
+    html.extend([
+        "<body>",
+        "<p>{0}</p>".format(message),
+        "</body>",
+        "</html>"
+    ])
+    
+    print("\n".join(html))
 
 # Start log
-message = 'Starting program ' + sys.argv[0] + ' <br>'
+message = 'Starting program {0} <br>'.format(sys.argv[0])
 
 # Check the system load
 emergency_load = 50.0
@@ -187,103 +172,56 @@ max_load = 40.0
 load = 99.0
 while load > max_load:
     load = 0.0
-    if True == os.access('/proc/loadavg', os.R_OK):
-        procload = open('/proc/loadavg', 'r')
-        loadline = procload.readline()
-        procload.close()
-        load = float(loadline.split()[1])
+    if os.access('/proc/loadavg', os.R_OK):
+        with open('/proc/loadavg', 'r') as procload:
+            loadline = procload.readline()
+            load = float(loadline.split()[1])
+            
         if load > emergency_load:
             message = message + 'System load is extremely high'
-            print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-            sys.exit(1)  # Just quit
+            print_html_response(message)
+            sys.exit(1)
+            
         if load > max_load:
-            # initialize using current system time, just in case...
             random.seed()
             sleep_time = 60 * random.random()
-            message = message + 'System load is too high: ' + \
-                str(load) + ', sleeping for ' + str(sleep_time) + ' seconds! <br> '
+            message = message + 'System load is too high: {0}, sleeping for {1} seconds! <br> '.format(load, sleep_time)
             time.sleep(sleep_time)
-
 
 form = cgi.FieldStorage()
 
 # Get input parameters
 pmax = truncate_string(form.getfirst('pmax', '100'), 10)
 if not is_number(pmax):
-    message = message + 'Bad string pmax'
-    print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-    sys.exit(1)  # Just quit
+    print_html_response('Bad string pmax')
+    sys.exit(1)
+
 if float(pmax) <= 0.0:
-    message = message + 'pmax out of range!'
-    print """\
-Content-Type: text/html\n
-<html>
-<p>ERROR!</br></br>
-The requested pmax is out of range:</br>pmax = %lf </br>
-pmax should be > 0.0 </br></p>
-</html>
-""" % (float(pmax))
-    sys.exit(1)  # Just quit
-pmax = (str(float(pmax)))
+    print_html_response('ERROR!</br></br>The requested pmax is out of range:</br>pmax = {0} </br>pmax should be > 0.0 </br>'.format(float(pmax)))
+    sys.exit(1)
+pmax = str(float(pmax))
 
 pmin = truncate_string(form.getfirst('pmin', '10'), 10)
 if not is_number(pmin):
-    message = message + 'Bad string pmin'
-    print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-    sys.exit(1)  # Just quit
+    print_html_response('Bad string pmin')
+    sys.exit(1)
+
 if float(pmin) <= 0.0:
-    message = message + 'pmin out of range!'
-    print """\
-Content-Type: text/html\n
-<html>
-<p>ERROR!</br></br>
-The requested pmin is out of range:</br>pmin = %lf </br>
-pmin should be > 0.0 </br></p>
-</html>
-""" % (float(pmin))
-    sys.exit(1)  # Just quit
+    print_html_response('ERROR!</br></br>The requested pmin is out of range:</br>pmin = {0} </br>pmin should be > 0.0 </br>'.format(float(pmin)))
+    sys.exit(1)
 pmin = str(float(pmin))
 
 phaseshift = truncate_string(form.getfirst('phaseshift', '0.05'), 10)
 if not is_number(phaseshift):
-    message = message + 'Bad string phaseshift'
-    print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-    sys.exit(1)  # Just quit
-if float(phaseshift) <= 0.0:
-    message = message + 'Phase shift out of range!'
-    print """\
-Content-Type: text/html\n
-<html>
-<p>ERROR!</br></br>
-The requested phase shift is out of range:</br>phaseshift = %lf </br>
-The phase shift should be between 0.0 and 0.5 .</br></p>
-</html>
-""" % (float(phaseshift))
-    sys.exit(1)  # Just quit
+    print_html_response('Bad string phaseshift')
+    sys.exit(1)
+
+if float(phaseshift) <= 0.0 or float(phaseshift) >= 0.5:
+    print_html_response('ERROR!</br></br>The requested phase shift is out of range:</br>phaseshift = {0} </br>The phase shift should be between 0.0 and 0.5 .</br>'.format(float(phaseshift)))
+    sys.exit(1)
 phaseshift = str(float(phaseshift))
 
 fileupload = truncate_string(form.getfirst('fileupload', 'True'), 5)
-
 
 # Check if input values are reasonable
 if float(pmax) > 10000:
@@ -293,54 +231,13 @@ if float(pmin) < 0.001:
 if float(phaseshift) < 0.0005:
     phaseshift = '0.0005'
 
-
-if float(phaseshift) >= 0.5:
-    message = message + 'Phase shift out of range!'
-    print """\
-Content-Type: text/html\n
-<html>
-<p>ERROR!</br></br>
-The requested phase shift is out of range:</br>phaseshift = %lf </br>
-The phase shift should be between 0.0 and 0.5 .</br></p>
-</html>
-""" % (float(phaseshift))
-    sys.exit(1)  # Just quit
-
-
-if fileupload == "True":
-    message = message + 'Uploading new file <br>'
-    # A nested FieldStorage instance holds the file
-    fileitem = form['file']
-    # Test if the file was NOT uploaded
-    if not fileitem.filename:
-        message = 'ERROR!!! No file was uploaded. :('
-        print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-        sys.exit(0)  # Just quit
-
-    # Check if the input filename looks suspicious
-    if is_suspicious_filename(fileitem.filename):
-        message = 'ERROR!!! The input filename looks suspicious! Please rename the input file.'
-        print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-        sys.exit(0)  # Just quit
-    
-
 safe_serverside_filename_for_original_lightcurve_file = 'original_lightcurve_file.txt'
 
 jdmin = '0'
 jdmax = '2470000'
 
 pid = os.getpid()
-message = message + 'Process ID:  ' + str(pid) + ' <br>'
+message = message + 'Process ID: {0} <br>'.format(pid)
 
 # Set default values for time conversion parameters
 applyhelcor = 'No'
@@ -351,305 +248,184 @@ pmanual = ''
 previouspmanual = '0.1'
 phaserange = '1'
 
-# If a new file is being uploaded - we generate new JobID
 if fileupload == "True":
-    # Generate new JobID
-    JobID = 'lk' + str(pid)
-    random.seed()  # initialize using current system time, just in case...
-    for i in range(8):
-        JobID = JobID + random.choice(string.letters)
-    # Add the input lightcurve file name for convenience
-    JobID = JobID + '__' + sanitize_filename(fileitem.filename).replace('.','_')
-    # Take care of the other inout parameters appropriate for the new file
-    # upload
+    message = message + 'Uploading new file <br>'
+    fileitem = form['file']
+    
+    if not fileitem.filename:
+        print_html_response('ERROR!!! No file was uploaded. :(')
+        sys.exit(0)
+    
+    if is_suspicious_filename(fileitem.filename):
+        print_html_response('ERROR!!! The input filename looks suspicious! Please rename the input file.')
+        sys.exit(0)
+
+    # Generate new JobID for new file upload
+    JobID = 'lk{0}'.format(pid)
+    random.seed()
+    for _ in range(8):
+        JobID = JobID + random.choice(string.ascii_letters)
+    JobID = JobID + '__' + sanitize_filename(fileitem.filename).replace('.', '_')
+    
+    # Handle time conversion parameters
     applyhelcor = truncate_string(form.getvalue('applyhelcor'), 3)
     timesys = truncate_string(form.getvalue('timesys'), 3)
-    J2Kposition = truncate_string(
-        form.getfirst(
-            'position',
-            '00:00:00.00 +00:00:00.0'),
-        100)
-    if applyhelcor == 'Yes':
-        if J2Kposition == '00:00:00.00 +00:00:00.0':
-            print """\
-Content-Type: text/html\n
-<html>
-<p>PROBABLE ERROR!<br>
-You have specified that the Heliocentric correction should be applied,
-but the sky position is still set to the default value 00:00:00.00 +00:00:00.0.<br>
-Please go back and enter the accurate J2000 position of the star.</p>
-<p>
-applyhelcor=%s,
-timesys=%s,
-J2Kposition=%s.
-</p>
-</html>
-""" % (applyhelcor, timesys, J2Kposition)
-            sys.exit(0)  # Just quit
+    J2Kposition = truncate_string(form.getfirst('position', '00:00:00.00 +00:00:00.0'), 100)
+    
+    if applyhelcor == 'Yes' and J2Kposition == '00:00:00.00 +00:00:00.0':
+        print_html_response(
+            'PROBABLE ERROR!<br>'
+            'You have specified that the Heliocentric correction should be applied, '
+            'but the sky position is still set to the default value 00:00:00.00 +00:00:00.0.<br>'
+            'Please go back and enter the accurate J2000 position of the star.'
+        )
+        sys.exit(0)
 else:
-    # we'll be processing a previously uploaded file
-    # make sure the supplied JobID does not look suspicious
-    #
-    #  12345678901234567
-    # 'lk14510GAXQvnDy__'
+    # Processing previously uploaded file
     JobID = truncate_string(form.getfirst('jobid', 'True'), 18 + MAX_INPUT_FILENAME_LENGTH)
     if not is_valid_string(JobID):
-        message = message + 'Bad string JobID'
-        print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-        sys.exit(1)  # Just quit
+        print_html_response('Bad string JobID')
+        sys.exit(1)
     if JobID == "True":
-        message = message + 'ERROR JobID == True'
-        print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-        sys.exit(0)  # Just quit
+        print_html_response('ERROR JobID == True')
+        sys.exit(0)
+
     fn = truncate_string(form.getfirst('lcfile', 'True'), 20)
     if not is_valid_string(fn):
-        message = message + 'Bad string fn: ' + fn
-        print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-        sys.exit(1)  # Just quit
+        print_html_response('Bad string fn: {0}'.format(fn))
+        sys.exit(1)
     if fn == "True":
-        message = message + 'ERROR fn == True'
-        print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-        sys.exit(0)  # Just quit
+        print_html_response('ERROR fn == True')
+        sys.exit(0)
     if is_suspicious_filename(fn):
-        message = 'ERROR!!! The input filename (fn) looks suspicious! Please rename the input file.'
-        print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-        sys.exit(0)  # Just quit
-    #
+        print_html_response('ERROR!!! The input filename (fn) looks suspicious! Please rename the input file.')
+        sys.exit(0)
+
     jdmin = truncate_string(form.getfirst('jdmin', '0'), 20)
     if not is_number(jdmin):
-        message = message + 'Bad string jdmin'
-        print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-        sys.exit(1)  # Just quit
+        print_html_response('Bad string jdmin')
+        sys.exit(1)
     jdmax = truncate_string(form.getfirst('jdmax', '2460000'), 20)
     if not is_number(jdmax):
-        message = message + 'Bad string jdmax'
-        print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-        sys.exit(1)  # Just quit
+        print_html_response('Bad string jdmax')
+        sys.exit(1)
 
-message = message + 'Job ID:  ' + JobID + ' <br>'
+message = message + 'Job ID: {0} <br>'.format(JobID)
 
-# one way or the other, JobID should be the valid string
 if not is_valid_string(JobID):
-    message = message + 'Bad string JobID'
-    print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-    sys.exit(1)  # Just quit
+    print_html_response('Bad string JobID')
+    sys.exit(1)
 
-# continue parsing the form
+# Parse additional form parameters
 jdmanual = truncate_string(form.getfirst('jdmanual', ''), 20)
 pmanual = truncate_string(form.getfirst('pmanual', ''), 20)
 previouspmanual = truncate_string(form.getfirst('previouspmanual', ''), 20)
 previoujdmanual = truncate_string(form.getfirst('previoujdmanual', ''), 20)
-if pmanual == previouspmanual:
-    if jdmanual == previoujdmanual:
-        pmanual = ''
-        jdmanual = ''
+if pmanual == previouspmanual and jdmanual == previoujdmanual:
+    pmanual = ''
+    jdmanual = ''
 
 phaserange = truncate_string(form.getfirst('phaserange', '1'), 10)
-
 asassnband = truncate_string(form.getfirst('asassnband', '1'), 10)
 
-dirname = 'files/' + JobID
+dirname = 'files/{0}'.format(JobID)
 if fileupload == "True":
     os.mkdir(dirname)
 dirname = dirname + '/'
 
-
-# The scary part - writing the file
+# Handle file upload
 if fileupload == "True":
-    # strip leading path from file name to avoid directory traversal attacks
-    fn = os.path.basename(
-        safe_serverside_filename_for_original_lightcurve_file)
-    # os.path.join(dirname, fn) is used to construct the file path in a
-    # platform-independent way
+    fn = os.path.basename(safe_serverside_filename_for_original_lightcurve_file)
     file_path = os.path.join(dirname, fn)
+    
     if os.path.exists(file_path):
-        message = 'ERROR!!! The output file already exist'
-        print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-        sys.exit(0)  # Just quit
+        print_html_response('ERROR!!! The output file already exists')
+        sys.exit(0)
 
     try:
-        f = open(file_path, 'wb')
+        with open(file_path, 'wb') as f:
+            try:
+                for chunk in fbuffer(fileitem.file, file_readwrite_buffer_size):
+                    f.write(chunk)
+            except ValueError as e:
+                os.remove(file_path)
+                print_html_response('ERROR!!! The lightcurve file is too large')
+                sys.exit(1)
 
-        try:
-            # Write the file in chunks
-            for chunk in fbuffer(fileitem.file, file_readwrite_buffer_size):
-                f.write(chunk)
-        except ValueError as e:
-            f.close()
-            os.remove(file_path)  # Delete the incomplete file
-            message = 'ERROR!!! The lightcurve file is too large'
-            print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
-            sys.exit(1)  # Exit the script
-
-        f.close()
-        
-        # Save the original filename to a text file
+        # Save original filename
         original_filename = sanitize_filename(fileitem.filename)
         with open(os.path.join(dirname, 'original_lightcurve_filename.txt'), 'w') as f:
             f.write(original_filename)
-            # When using the with statement, the file is automatically closed when the block
-            # inside the with statement is exited. However, explicitly calling f.close() provides clarity
-            # and ensures that the file is closed immediately after writing.
-            f.close()
 
-        message = 'The lightcurve file "' + fn + '" was uploaded successfully! <br>' + \
-                  'Pmax:  ' + pmax + 'd <br> ' + \
-                  'Pmin:  ' + pmin + 'd <br> ' + \
-                  'Pshift:  ' + phaseshift + ' <br> '
+        message = 'The lightcurve file "{0}" was uploaded successfully! <br>Pmax: {1}d <br>Pmin: {2}d <br>Pshift: {3} <br>'.format(
+            fn, pmax, pmin, phaseshift)
     except IOError as e:
         print("I/O Error:", e)
-        sys.exit(1)  # Exit the script
-
+        sys.exit(1)
 else:
     file_path = os.path.join(dirname, fn)
 
 if not os.path.exists(file_path):
-    message = message + 'ERROR: file_path does not exist ' + file_path
-    print """\
-Content-Type: text/html\n
-<html><body>
-<p>%s</p>
-</body></html>
-""" % (message,)
+    print_html_response('ERROR: file_path does not exist {0}'.format(file_path))
     sys.exit(1)
 
-# Check that the input file is not a obvious archive
+# Security checks
 if is_archive(file_path):
-    # Delete the suspicious file
     os.remove(file_path)
-    # silent exit here will produce 'End of script output before headers' in
-    # apache logs
     sys.exit(1)
 
-# Check that the input file looks like a text file, if not - delete it
 if not is_text_but_not_script(file_path):
-    # Delete the suspicious file
     os.remove(file_path)
-    # silent exit here will produce 'End of script output before headers' in
-    # apache logs
     sys.exit(1)
 
-# The script needs HTTP_HOST variable to be set for its normal operations
-# Note that the maximum lenght of HTTP_HOST is hardcode here
-fullhostname = truncate_string(os.getenv('HTTP_HOST', 'localhost'), 20)
 
+# Get hostname and determine protocol
+fullhostname = truncate_string(os.getenv('HTTP_HOST', 'localhost'), 20)
 
 # Default protocol
 protocol = 'http'
 
 # Check if the script was accessed via HTTPS
-if 'REQUEST_SCHEME' in os.environ and os.environ['REQUEST_SCHEME'] == 'https':
+if os.environ.get('REQUEST_SCHEME') == 'https':
     # Apache web server sets REQUEST_SCHEME=https
     protocol = 'https'
-elif 'HTTPS' in os.environ and os.environ['HTTPS'] == 'on':
+elif os.environ.get('HTTPS') == 'on':
     # Nginx sets HTTPS=on
     protocol = 'https'
-elif 'HTTP_REFERER' in os.environ and 'https:' in os.environ['HTTP_REFERER']:
+elif os.environ.get('HTTP_REFERER', '').find('https:') != -1:
     # Check if the referer contains 'https:'
     protocol = 'https'
 
-message = message + '<br><br>The output will be written to <a href=\"' + protocol + '://' + fullhostname + \
-    service_name_for_url + dirname + '\">' + protocol + '://' + fullhostname + '/astrometry_engine/' + dirname + '</a><br><br>'
+# Construct the output directory URL
+message = '{0}<br><br>The output will be written to <a href="{1}://{2}{3}{4}">{1}://{2}/astrometry_engine/{4}</a><br><br>'.format(
+    message, protocol, fullhostname, service_name_for_url, dirname)
 
-# Run the actual command
-syscmd = 'export PATH=$PWD:$PATH; echo ' + phaserange + ' > ' + dirname + 'phaserange_type.input ; echo ' + asassnband + ' > ' + dirname + 'asassnband_' + asassnband + '.input ;  echo ' + applyhelcor + ' ' + timesys + ' ' + J2Kposition + ' > ' + \
-    dirname + 'time_conversion.txt  ; lk_web.sh ' + file_path + ' ' + str(pmax) + ' ' + str(pmin) + ' ' + str(phaseshift) + ' ' + str(jdmin) + ' ' + str(jdmax) + ' ' + JobID + ' ' + jdmanual + ' ' + pmanual + ' 2>&1 >> ' + dirname + 'program.log'
-CmdReturnStatus = os.system(
-    'echo \"' +
-    syscmd +
-    '\" >> ' +
-    dirname +
-    'program.log')
+# Construct and run the command
+syscmd = 'export PATH=$PWD:$PATH; echo {0} > {1}phaserange_type.input ; echo {2} > {1}asassnband_{2}.input ; echo {3} {4} {5} > {1}time_conversion.txt ; lk_web.sh {6} {7} {8} {9} {10} {11} {12} {13} {14} 2>&1 >> {1}program.log'.format(
+    phaserange, dirname, asassnband, applyhelcor, timesys, J2Kposition,
+    file_path, str(pmax), str(pmin), str(phaseshift), str(jdmin),
+    str(jdmax), JobID, jdmanual, pmanual
+)
+
+# Log the command
+CmdReturnStatus = os.system('echo "{0}" >> {1}program.log'.format(syscmd, dirname))
+# Execute the command
 CmdReturnStatus = os.system(syscmd)
-message = message + 'Command return status:  ' + str(CmdReturnStatus) + ' <br>'
 
-# Make sure the original data file is removed by lk_web.sh for security
-# reasons (unless this is not the first run)
+message = message + 'Command return status: {0} <br>'.format(CmdReturnStatus)
+
+# Clean up original data file for security
 if os.path.exists(file_path):
     if fn != 'lightcurve.dat':
         os.remove(file_path)
 
-# Everything is fine - redirect
+# Construct results page URL and redirect
+results_page_url = '{0}://{1}{2}{3}index.html'.format(
+    protocol, fullhostname, service_name_for_url, dirname)
 
-# updated and moved up
-#if 'HTTPS' in os.environ and os.environ['HTTPS'] == 'on':
-#    # HTTPS request
-#    protocol = 'https'
-#else:
-#    # HTTP request
-#    protocol = 'http'
-    
-# Everything is fine - redirect
-results_page_url = protocol + '://' + fullhostname + \
-    service_name_for_url + dirname + 'index.html'
+# Final message for production
+message = 'The output will be written to <a href="{0}">{0}</a>'.format(results_page_url)
 
-# That's for debugging - print out the detailed log
-# Read the log file
-#f = open(dirname + 'program.log', 'r')
-#for line in f:
-#    message = message + line + ' <br>'
-
-# That's for production - 'The output will be written to' is the key phrase expected by the VaST script pokaz_laflerkinman.sh
-message = 'The output will be written to <a href="' + results_page_url + '">' + results_page_url + '</a>'
-
-print """\
-Content-Type: text/html\n
-<html>
-<head>
-<meta http-equiv=\"Refresh\" content=\"0; url=%s\">
-</head>
-<body>
-<p>%s</p>
-</body></html>
-""" % (results_page_url, message,)
-sys.exit(0)  # Just quit
+# Print final HTML response with redirect
+print_html_response(message, results_page_url)
+sys.exit(0)
