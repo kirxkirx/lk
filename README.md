@@ -8,9 +8,12 @@ You are welcome to install it on your own web server.
 ## Requirements
 
 - A CGI-enabled web server (tested with Apache)
-- Python 2 with `os`, `cgi`, and `cgitb` modules installed
+- Python 3 with `os`, `cgi`, and `cgitb` modules installed
 - gnuplot
 - GCC
+
+You may use Python 2 by replacing the file `process_lightcurve.py` with 
+`process_lightcurve.py2` in `cgi-bin/lk/`
 
 ## Installation Instructions
 
@@ -87,7 +90,7 @@ An example of a deployment script may be found in the [GitHub Action worklow](ht
 
 ## Copyleft
 
-Copyleft 2014-2024 Kirill Sokolovsky <kirx@kirx.net>
+Copyleft 2014-2025 Kirill Sokolovsky <kirx@kirx.net>
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
