@@ -250,6 +250,19 @@ phaserange = '1'
 
 if fileupload == "True":
     message = message + 'Uploading new file <br>'
+    
+    # Check if file field exists in form data
+    if 'file' not in form:
+        print_html_response(
+            'ERROR!!! File upload failed. This usually means the file is too large for the web server.<br><br>'
+            'Possible solutions:<br>'
+            '1. Check that your file is under 50MB<br>'
+            '2. Web server upload limits may need to be increased<br>'
+            '3. Try uploading a smaller file first to test<br><br>'
+            'If this problem persists, contact the system administrator.'
+        )
+        sys.exit(0)
+    
     fileitem = form['file']
     
     if not fileitem.filename:
