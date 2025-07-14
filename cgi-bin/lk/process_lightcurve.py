@@ -12,7 +12,7 @@ from urllib.parse import urlparse  # Updated from urlparse for Python 3
 # Global script parameters
 service_name_for_url = '/lk/'
 file_readwrite_buffer_size = 8192
-MAX_FILE_SIZE = 10000000  # Maximum file size in bytes (10 MB)
+MAX_FILE_SIZE = 50000000  # Maximum file size in bytes (50 MB) - increased from 10 MB
 MAX_INPUT_FILENAME_LENGTH = 80
 
 def is_suspicious_filename(filename):
@@ -349,7 +349,7 @@ if fileupload == "True":
                     f.write(chunk)
             except ValueError as e:
                 os.remove(file_path)
-                print_html_response('ERROR!!! The lightcurve file is too large')
+                print_html_response('ERROR!!! The lightcurve file is too large (maximum size: {0} MB)'.format(MAX_FILE_SIZE // 1000000))
                 sys.exit(1)
 
         # Save original filename

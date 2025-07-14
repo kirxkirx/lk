@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-// set program parameters
-#define MAX_POINTS 120000
+#include "vast_limits.h"
+
+// Use the limit from vast_limits.h instead of hardcoded value
+#define MAX_POINTS MAX_LIGHTCURVE_POINTS
 
 // set image parameters
 #define IMAGE_X   600
@@ -22,10 +24,10 @@
 #define PHASE_RANGE (PHASE_MAX-PHASE_MIN)
 
 int find_closest(double x, double y, double *X, double *Y, int N, double new_X1, double new_X2, double new_Y1, double new_Y2){
- double y_to_x_scaling_factor=fabsf(new_X2-new_X1)/fabsf(new_Y2-new_Y1);
+ double y_to_x_scaling_factor;
  int i;
  double best_dist;
- int best_dist_num=0;
+ int best_dist_num;
 
  if ( NULL == X ) {
   fprintf(stderr, "ERROR in find_closest(): X is NULL\n");
@@ -36,7 +38,9 @@ int find_closest(double x, double y, double *X, double *Y, int N, double new_X1,
   exit( EXIT_FAILURE );
  }
 
- best_dist=(x-X[0])*(x-X[0])+(y-Y[0])*(y-Y[0])*y_to_x_scaling_factor*y_to_x_scaling_factor; //!!
+ y_to_x_scaling_factor = fabsf(new_X2-new_X1)/fabsf(new_Y2-new_Y1);
+ best_dist_num = 0;
+ best_dist = (x-X[0])*(x-X[0])+(y-Y[0])*(y-Y[0])*y_to_x_scaling_factor*y_to_x_scaling_factor; //!!
 
  for(i=0;i<N;i++){
   if( (x-X[i])*(x-X[i])+(y-Y[i])*(y-Y[i])*y_to_x_scaling_factor*y_to_x_scaling_factor<best_dist ){
@@ -51,41 +55,47 @@ int find_closest(double x, double y, double *X, double *Y, int N, double new_X1,
 }
 
 int main(int argc, char **argv){
+ double clickX, clickY;
+ double targetX, targetY;
+ double *jd;
+ double *phase;
+ double *m;
+ FILE *phasefile;
+ FILE *phaserangefile;
+ double phase_min, phase_max, phase_range;
+ double max_m, min_m;
+ double max_jd, min_jd;
+ int N;
+ FILE *selectedfile;
+ int i, j;
+ double x_pix_to_phase, y_pix_to_m;
+ double target_phase, target_m;
+ int targetN;
+ double targetJD;
+ int fnumber;
+ char filename[256];
  
  if( argc<3 ){
   fprintf(stderr,"Usage: %s phase_lightcurve.dat clickX clickY\n",argv[0]);
   return 1;
  }
- double clickX=atof(argv[2]);
- double clickY=atof(argv[3]);
- double targetX=clickX-CORNER1_X;
- double targetY=CORNER1_Y-clickY;
-
- double *jd;
- double *phase;
- double *m;
-
- FILE *phasefile;
- FILE *phaserangefile;
  
- double phase_min,phase_max,phase_range;
- double max_m,min_m;
- double max_jd,min_jd;
- int N;
- 
- FILE *selectedfile;
+ clickX = atof(argv[2]);
+ clickY = atof(argv[3]);
+ targetX = clickX-CORNER1_X;
+ targetY = CORNER1_Y-clickY;
 
- jd=malloc(MAX_POINTS*sizeof(double));
+ jd = malloc(MAX_POINTS*sizeof(double));
  if ( NULL == jd ) {
   fprintf(stderr, "ERROR in main(): jd is NULL\n");
   exit( EXIT_FAILURE );
  }
- phase=malloc(MAX_POINTS*sizeof(double));
+ phase = malloc(MAX_POINTS*sizeof(double));
  if ( NULL == phase ) {
   fprintf(stderr, "ERROR in main(): phase is NULL\n");
   exit( EXIT_FAILURE );
  }
- m=malloc(MAX_POINTS*sizeof(double)); 
+ m = malloc(MAX_POINTS*sizeof(double)); 
  if ( NULL == m ) {
   fprintf(stderr, "ERROR in main(): m is NULL\n");
   exit( EXIT_FAILURE );
@@ -96,13 +106,14 @@ int main(int argc, char **argv){
   fprintf(stderr,"ERROR: cannot open file %s for reading\n",argv[1]);
   return 1;
  }
- int i=0;
+ 
+ i = 0;
  if( 0==strcmp(argv[1],"lightcurve.dat") ){
   while(-1<fscanf(phasefile,"%lf %lf",&jd[i],&m[i])){
    phase[i]=jd[i];
    i++;
    if( i>=MAX_POINTS ){
-    fprintf(stderr,"ERROR: i>=MAX_POINTS\n");
+    fprintf(stderr,"ERROR: i>=MAX_POINTS (%d)\n", MAX_POINTS);
     return 1;
    }
   }
@@ -134,7 +145,7 @@ int main(int argc, char **argv){
   while(-1<fscanf(phasefile,"%lf %lf %lf",&phase[i],&m[i],&jd[i])){
    i++;
    if( i>=MAX_POINTS ){
-    fprintf(stderr,"ERROR: i>=MAX_POINTS\n");
+    fprintf(stderr,"ERROR: i>=MAX_POINTS (%d)\n", MAX_POINTS);
     return 1;
    }
   }
@@ -155,18 +166,16 @@ int main(int argc, char **argv){
  
  double m_range=max_m-min_m;
 
- double x_pix_to_phase=phase_range/X_RANGE_PIX;
- double y_pix_to_m=m_range/Y_RANGE_PIX;
+ x_pix_to_phase = phase_range/X_RANGE_PIX;
+ y_pix_to_m = m_range/Y_RANGE_PIX;
  
- double target_phase=phase_min+targetX*x_pix_to_phase;
- double target_m=max_m-targetY*y_pix_to_m;
+ target_phase = phase_min+targetX*x_pix_to_phase;
+ target_m = max_m-targetY*y_pix_to_m;
  
- int targetN;
- targetN=find_closest( target_phase, target_m, phase, m, N, phase_min, phase_max, min_m, max_m);
- double targetJD=jd[targetN];
+ targetN = find_closest( target_phase, target_m, phase, m, N, phase_min, phase_max, min_m, max_m);
+ targetJD = jd[targetN];
  
- int fnumber; // lightcurve file number: 0 is lightcurve.dat, N is phase_lc_N.dat
- char filename[256]; // lightcurve file name that will be dynamically generated
+ // lightcurve file number: 0 is lightcurve.dat, N is phase_lc_N.dat
  for(fnumber=0;fnumber<21;fnumber++){
   // Read lightcurve
   if( fnumber==0 )
@@ -183,7 +192,7 @@ int main(int argc, char **argv){
    while(-1<fscanf(phasefile,"%lf %lf",&jd[i],&m[i])){
     i++;
     if( i>=MAX_POINTS ){
-     fprintf(stderr,"ERROR: i>=MAX_POINTS\n");
+     fprintf(stderr,"ERROR: i>=MAX_POINTS (%d)\n", MAX_POINTS);
      return 1;
     }
    }
@@ -191,7 +200,7 @@ int main(int argc, char **argv){
    while(-1<fscanf(phasefile,"%lf %lf %lf",&phase[i],&m[i],&jd[i])){
     i++;
     if( i>=MAX_POINTS ){
-     fprintf(stderr,"ERROR: i>=MAX_POINTS\n");
+     fprintf(stderr,"ERROR: i>=MAX_POINTS (%d)\n", MAX_POINTS);
      return 1;
     }
    }

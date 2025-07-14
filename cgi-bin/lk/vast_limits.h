@@ -14,6 +14,7 @@
 /* Memory settings */
 #define MAX_NUMBER_OF_STARS 300000
 #define MAX_NUMBER_OF_OBSERVATIONS 1000000 // per star
+#define MAX_LIGHTCURVE_POINTS 250000 /* Maximum number of points in a single lightcurve file for web interface */
 #define MAX_MEASUREMENTS_IN_RAM 1200000 /* Max. number of measurements to be stored in memory */
 #define FILENAME_LENGTH 1024 /* Max. image filename length */
 #define OUTFILENAME_LENGTH 128 /* Max. out filename length */

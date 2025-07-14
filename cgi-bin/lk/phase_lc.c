@@ -3,19 +3,20 @@
 #include <string.h>
 #include <math.h>
 
-//#define MAX_N_OBS 100000
-
 #include "vast_limits.h" // for MAX_NUMBER_OF_OBSERVATIONS
 
-#define MAX_N_OBS MAX_NUMBER_OF_OBSERVATIONS
+#define MAX_N_OBS MAX_LIGHTCURVE_POINTS
 
 
 int find_closest(float x, float y, float *X, float *Y, int N, float new_X1, float new_X2, float new_Y1, float new_Y2){
- float y_to_x_scaling_factor=fabsf(new_X2-new_X1)/fabsf(new_Y2-new_Y1);
+ float y_to_x_scaling_factor;
  int i;
  float best_dist;
- int best_dist_num=0;
- best_dist=(x-X[0])*(x-X[0])+(y-Y[0])*(y-Y[0])*y_to_x_scaling_factor*y_to_x_scaling_factor; //!!
+ int best_dist_num;
+ 
+ y_to_x_scaling_factor = fabsf(new_X2-new_X1)/fabsf(new_Y2-new_Y1);
+ best_dist_num = 0;
+ best_dist = (x-X[0])*(x-X[0])+(y-Y[0])*(y-Y[0])*y_to_x_scaling_factor*y_to_x_scaling_factor; //!!
  for(i=1;i<N;i++){  
   if( (x-X[i])*(x-X[i])+(y-Y[i])*(y-Y[i])*y_to_x_scaling_factor*y_to_x_scaling_factor<best_dist ){
    best_dist=(x-X[i])*(x-X[i])+(y-Y[i])*(y-Y[i])*y_to_x_scaling_factor*y_to_x_scaling_factor;
@@ -28,7 +29,7 @@ int find_closest(float x, float y, float *X, float *Y, int N, float new_X1, floa
 
 void get_min_max_double(double *x, int N, double *min, double *max){
  int i;
- (*min)=(*max)=x[0];
+ (*min) = (*max) = x[0];
  for(i=1;i<N;i++){  
   if( x[i]<(*min) )(*min)=x[i];
   if( x[i]>(*max) )(*max)=x[i];
@@ -38,7 +39,7 @@ void get_min_max_double(double *x, int N, double *min, double *max){
 
 void get_min_max_float(float *x, int N, float *min, float *max){
  int i;
- (*min)=(*max)=x[0];
+ (*min) = (*max) = x[0];
  for(i=1;i<N;i++){  
   if( x[i]<(*min) )(*min)=x[i];
   if( x[i]>(*max) )(*max)=x[i];
@@ -47,11 +48,11 @@ void get_min_max_float(float *x, int N, float *min, float *max){
 }
 
 void make_fake_phases(double *jd, float *phase, float *m, unsigned int N_obs, unsigned int *N_obs_fake){
-
  unsigned int i;
- 
  FILE *phaserangetypefile;
- int phaserangetype=1;
+ int phaserangetype;
+ 
+ phaserangetype = 1;
  
  phaserangetypefile=fopen("phaserange_type.input","r");
  if( NULL!=phaserangetypefile ){
@@ -115,16 +116,12 @@ void compute_phases(double *jd, float *phase, unsigned int N_obs, float f, doubl
 }
 
 int main( int argc, char **argv){
- 
  FILE *lcfile;
-
- unsigned int N_obs,N_obs_fake;
+ unsigned int N_obs, N_obs_fake;
  double *jd;
  float *phase;
  float *m;
- 
  unsigned int i;
-
  double JD0;
  float frequency;
  
@@ -133,20 +130,20 @@ int main( int argc, char **argv){
   return 1;
  }
  
- JD0=atof(argv[2]);
- frequency=1.0/atof(argv[3]);
+ JD0 = atof(argv[2]);
+ frequency = 1.0/atof(argv[3]);
 
- jd=malloc(MAX_N_OBS*sizeof(double));
+ jd = malloc(MAX_N_OBS*sizeof(double));
  if ( NULL == jd ) {
   fprintf(stderr, "ERROR in main(): jd is NULL\n");
   exit( EXIT_FAILURE );
  }
- phase=malloc(2*MAX_N_OBS*sizeof(float));
+ phase = malloc(2*MAX_N_OBS*sizeof(float));
  if ( NULL == phase ) {
   fprintf(stderr, "ERROR in main(): phase is NULL\n");
   exit( EXIT_FAILURE );
  }
- m=malloc(2*MAX_N_OBS*sizeof(double)); 
+ m = malloc(2*MAX_N_OBS*sizeof(double)); 
  if ( NULL == m ) {
   fprintf(stderr, "ERROR in main(): m is NULL\n");
   exit( EXIT_FAILURE );
@@ -158,9 +155,13 @@ int main( int argc, char **argv){
   fprintf(stderr, "ERROR in main(): cannot open the input lightcurve file\n");
   exit( EXIT_FAILURE );
  }
- N_obs=0;
+ N_obs = 0;
  while(-1<fscanf(lcfile,"%lf %f",&jd[N_obs],&m[N_obs])){
   N_obs++;
+  if( N_obs >= MAX_N_OBS ){
+   fprintf(stderr, "ERROR: N_obs >= MAX_N_OBS (%d). Input file too large.\n", MAX_N_OBS);
+   exit( EXIT_FAILURE );
+  }
  }
  fclose(lcfile);
 
@@ -177,4 +178,3 @@ int main( int argc, char **argv){
 
  return 0;
 }
-
