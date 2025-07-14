@@ -190,6 +190,14 @@ while load > max_load:
 
 form = cgi.FieldStorage()
 
+# Debug: Log what form fields we actually received
+import sys
+print(f"DEBUG: Form fields received: {list(form.keys())}", file=sys.stderr)
+for key in form.keys():
+    value = form.getvalue(key)
+    if key != 'file':  # Don't log file content
+        print(f"DEBUG: {key} = {value}", file=sys.stderr)
+
 # Get input parameters
 pmax = truncate_string(form.getfirst('pmax', '100'), 10)
 if not is_number(pmax):
@@ -280,9 +288,19 @@ if fileupload == "True":
         JobID = JobID + random.choice(string.ascii_letters)
     JobID = JobID + '__' + sanitize_filename(fileitem.filename).replace('.', '_')
     
-    # Handle time conversion parameters
-    applyhelcor = truncate_string(form.getvalue('applyhelcor'), 3)
-    timesys = truncate_string(form.getvalue('timesys'), 3)
+    # Handle time conversion parameters with better error handling
+    applyhelcor = form.getvalue('applyhelcor')
+    if applyhelcor is None:
+        applyhelcor = 'No'  # Default value
+    else:
+        applyhelcor = truncate_string(applyhelcor, 3)
+    
+    timesys = form.getvalue('timesys') 
+    if timesys is None:
+        timesys = 'UTC'  # Default value
+    else:
+        timesys = truncate_string(timesys, 3)
+        
     J2Kposition = truncate_string(form.getfirst('position', '00:00:00.00 +00:00:00.0'), 100)
     
     if applyhelcor == 'Yes' and J2Kposition == '00:00:00.00 +00:00:00.0':
@@ -339,7 +357,11 @@ if pmanual == previouspmanual and jdmanual == previoujdmanual:
     jdmanual = ''
 
 phaserange = truncate_string(form.getfirst('phaserange', '1'), 10)
-asassnband = truncate_string(form.getfirst('asassnband', '1'), 10)
+asassnband = form.getfirst('asassnband')
+if asassnband is None:
+    asassnband = '1'  # Default value
+else:
+    asassnband = truncate_string(asassnband, 10)
 
 dirname = 'files/{0}'.format(JobID)
 if fileupload == "True":
