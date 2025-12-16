@@ -8,9 +8,10 @@ You are welcome to install it on your own web server.
 ## Requirements
 
 - A CGI-enabled web server (tested with Apache)
-- Python 3 with `os`, `cgi`, and `cgitb` modules installed
+- Python version >3.6 and <3.12 with modules `os` and `cgi` ***absent in Python 3.13 and above!***
 - gnuplot
 - GCC
+- GSL
 
 You may use Python 2 by replacing the file `process_lightcurve.py` with 
 `process_lightcurve.py2` in `cgi-bin/lk/`
